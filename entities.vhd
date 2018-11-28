@@ -1,0 +1,145 @@
+-------------------------------------------------
+-- Company:       GRACO-UnB
+-- Engineer:      DANIEL MAURICIO MU�OZ ARBOLEDA
+-- 
+-- Create Date:   06-Oct-2012 
+-- Design name:   HPABC
+-- Module name:   entities
+-- Description:   package defining IO of the components
+-- Automatically generated using the vHABCgen.m v1.0
+-------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+use work.fpupack.all;
+
+package Entities is
+
+component lfsr_fixtofloat_20bits	is
+port (reset     :  in std_logic;
+      clk       :  in std_logic;
+      start     :  in std_logic;
+      init      :  in std_logic_vector(7 downto 0);
+      lfsr_out  : out std_logic_vector(FP_WIDTH-1 downto 0));
+end component;
+
+component lfsr_px is
+port (reset    :  in std_logic;
+      clk      :  in std_logic;
+      start	:  in std_logic;
+      init     :  in std_logic_vector(7 downto 0);
+      lfsr_out : out std_logic_vector(FP_WIDTH-1 downto 0);
+      ready    : out std_logic);
+end component;
+
+component addsubfsm_v6 is
+port (reset     :  in std_logic;
+      clk       :  in std_logic;
+      op        :  in std_logic;
+      op_a    	 :  in std_logic_vector(FP_WIDTH-1 downto 0);
+      op_b    	 :  in std_logic_vector(FP_WIDTH-1 downto 0);
+      start_i	 :  in std_logic;
+      addsub_out : out std_logic_vector(FP_WIDTH-1 downto 0);
+      ready_as  : out std_logic);
+end component;
+
+component multiplierfsm_v2 is
+port (reset     :  in std_logic;
+      clk       :  in std_logic;
+      op_a    	 :  in std_logic_vector(FP_WIDTH-1 downto 0);
+      op_b    	 :  in std_logic_vector(FP_WIDTH-1 downto 0);
+      start_i	 :  in std_logic;
+      mul_out   : out std_logic_vector(FP_WIDTH-1 downto 0);
+      ready_mul : out std_logic);
+end component;
+
+--component sphere_particle_hd is
+--port (reset    :  in std_logic;
+--      clk      :  in std_logic;
+--      pstart   :  in std_logic;
+--      init     :  in std_logic_vector(7 downto 0);
+--      weight   :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      pos_act  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      best_ys  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      best_yi  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      new_pos  : out std_logic_vector(FP_WIDTH-1 downto 0);
+--      pready   : out std_logic;
+--
+--      fstart   :  in std_logic;
+--      x1_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x2_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x3_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x4_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x5_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x6_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_out    : out std_logic_vector(FP_WIDTH-1 downto 0);
+--      fready   : out std_logic);
+--end component;
+
+--component sphere_particle is
+--port (reset    :  in std_logic;
+--      clk      :  in std_logic;
+--      pstart   :  in std_logic;
+--      init     :  in std_logic_vector(7 downto 0);
+--      weight   :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      pos_act  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      best_ys  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      best_yi  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      new_pos  : out std_logic_vector(FP_WIDTH-1 downto 0);
+--
+--      fstart   :  in std_logic;
+--      x1_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x2_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x3_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x4_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x5_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      x6_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_out    : out std_logic_vector(FP_WIDTH-1 downto 0));
+--end component;
+
+
+--component inertia is
+--port (reset    :  in std_logic;
+--      clk      :  in std_logic;
+--      start	:  in std_logic;
+--      new_weight : out std_logic_vector(FP_WIDTH-1 downto 0);
+--      ready_inerti : out std_logic);
+--end component;
+
+--component compara_social is
+--port (reset    :  in std_logic;
+--      clk      :  in std_logic;
+--      start_cmpsc :  in std_logic;
+--      f_y_p1  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p2  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p3  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p4  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p5  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p6  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p7  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p8  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p9  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      f_y_p10  :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      y_pj     : out std_logic_vector(3 downto 0);
+--      cmpsc_out: out std_logic_vector(FP_WIDTH-1 downto 0);
+--      ready_cmpsc : out std_logic);
+--end component;
+
+--component serialcom
+--port( reset		:  in std_logic;
+--	   clk 			:  in std_logic;
+--	   start        :  in std_logic;
+--      d1          :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      d2          :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      d3          :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      d4          :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      d5          :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--      d6          :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--		ftn         :  in std_logic_vector(FP_WIDTH-1 downto 0);
+--		din     	:  in std_logic;
+--		data        : out std_logic_vector(7 downto 0);
+--		dout        : out std_logic);
+--end component;
+
+end Entities;
