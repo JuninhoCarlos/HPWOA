@@ -16,6 +16,16 @@ use work.fpupack.all;
 
 package Entities is
 
+component a_minusculo is
+	port(
+		reset       : in  std_logic;
+		clk      	  : in  std_logic;
+		start		  : in  std_logic;		  
+		new_weight  : out std_logic_vector(FP_WIDTH-1 downto 0);		  
+		ready_inerti: out std_logic
+	);
+end component;
+
 component lfsr_fixtofloat_20bits	is
 port (reset     :  in std_logic;
       clk       :  in std_logic;

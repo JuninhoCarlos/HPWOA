@@ -10,6 +10,11 @@ constant NP : integer := 10;
 --ND -> Número de dimensoes do problema
 constant ND : integer := 6;
 
+constant INITIAL_A_MINUSCULO : std_logic_vector(FP_WIDTH-1 downto 0) := s_two;
+constant A_SLOPE	: std_logic_vector(FP_WIDTH-1 downto 0) 				:= "101110110000001100010010011";
+
+constant numIter  : integer := 1000;
+
 -- Usado pq o gerador de numeros aleatorios precisa
 constant MAX_VELOCI : std_logic_vector(FP_WIDTH-1 downto 0) := "010000001100000000000000000";
 

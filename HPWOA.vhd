@@ -54,6 +54,12 @@ signal s_ready_cmp_baleia : std_logic := '0';
 signal best_baleia		  : std_logic_vector(3 downto 0);
 signal fitness_best_baleia: std_logic_vector(FP_WIDTH-1 downto 0);
 
+
+--sinais para o calcula da inercia (azinho)
+signal s_start_inertia 	: std_logic;
+signal new_a				: std_logic_vector(FP_WIDTH-1 downto 0);
+signal ready_inertia		: std_logic;
+
 begin
 
 best_fitness <= fitness_best_baleia;
@@ -105,6 +111,15 @@ cmp_whale: compara_baleias
       y_pj      			=> best_baleia,
       cmpsc_out 			=> fitness_best_baleia,
       ready_cmpsc 		=> s_ready_cmp_baleia
+	);
+
+inertia : a_minusculo 
+	port map (
+		reset    		=> reset,
+		clk      		=> clk,
+		start		   	=> s_start_inertia,
+		new_weight  	=> new_a,
+		ready_inerti	=> ready_inertia
 	);
 
 								 
