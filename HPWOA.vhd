@@ -9,7 +9,8 @@ use work.woapack.all;
 entity HPWOA is
 	port (
 		reset    :  in std_logic;
-      clk      :  in std_logic
+      clk      :  in std_logic;
+		fout		: 	out std_logic_vector(FP_WIDTH-1 downto 0)
       
 	);
 end HPWOA;
@@ -23,8 +24,6 @@ signal state : t_state;
 --Sinal que indica o inicio do algoritmo
 signal i_start	 		: std_logic := '0';
 
---Sinal que sinaliza inicio de avaliação do fitness da função
-signal s_start_eval : std_logic := '0';
 
 --Sinais do gerador de números aleatorio para inicializacao das baleias
 signal s_start_lfsr_px	: std_logic := '0';
@@ -36,6 +35,13 @@ signal s_ready_lfsr_px 	: std_logic := '0';
 type matrix2D is array (1 to NP, 1 to ND) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal s_nx : matrix2D;
 
+
+signal pstart : std_logic;
+signal pready : std_logic;
+
+--Sinais para avaliação de função custo na particula
+signal s_start_eval : std_logic := '0'; --Sinal que sinaliza inicio de avaliação do fitness da função
+signal fready_eval : std_logic := '0';
 
 
 begin
@@ -49,6 +55,23 @@ rand_px: lfsr_px
              lfsr_out      => s_lfsr_out_px,
              ready         => s_ready_lfsr_px);
 
+whale_1 : sphere_whale
+	port map(
+		reset    => reset,
+      clk      => clk,
+      pstart   => pstart,
+      pready   => pready,
+
+      fstart   => s_start_eval,
+      x1_in    => s_nx(1,1),
+      x2_in    => s_nx(1,2),
+      x3_in    => s_nx(1,3),
+      x4_in    => s_nx(1,4),
+      x5_in    => s_nx(1,5),
+      x6_in    => s_nx(1,6),
+      f_out    => fout,
+      fready   => fready_eval
+	);
 
 								 
 --Máquina de estados que controla as baleias
@@ -99,14 +122,15 @@ if rising_edge(clk) then
                end if;
 
            when fitness_x =>
---               s_start_eval <= '0';
+               s_start_eval <= '0';
 --               s_start_inertia <= '0';
 --               icd := 1;
---               if s_ready_eval = '1' then
---                   s_start_cmpsc <= '1';
+               if fready_eval = '1' then
+                   --s_start_cmpsc <= '1';
 --                   state <= compara_soc;
+						state <= waiting;
 --               else state <= fitness_x;
---               end if;
+               end if;
 				when others => state <= waiting;
        end case;
    end if;
