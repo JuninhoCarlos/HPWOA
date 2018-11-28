@@ -6,11 +6,13 @@ use work.entities.all;
 use work.fpupack.all;
 use work.woapack.all;
 
+-- radix define float27 -float -fraction 18 comando para visualizar o valor
+
 entity HPWOA is
 	port (
-		reset    :  in std_logic;
-      clk      :  in std_logic;
-		fout		: 	out std_logic_vector(FP_WIDTH-1 downto 0)
+		reset    	:  in std_logic;
+      clk      	:  in std_logic;
+		best_fitness: 	out std_logic_vector(FP_WIDTH-1 downto 0)
       
 	);
 end HPWOA;
@@ -35,16 +37,26 @@ signal s_ready_lfsr_px 	: std_logic := '0';
 type matrix2D is array (1 to NP, 1 to ND) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal s_nx : matrix2D;
 
+type matriz1D is array (1 to NP) of std_logic_vector(FP_WIDTH-1 downto 0);
+signal fout : matriz1D; --Sinal que possui o valor da função fitness para cada baleia
+
 
 signal pstart : std_logic;
 signal pready : std_logic;
 
 --Sinais para avaliação de função custo na particula
 signal s_start_eval : std_logic := '0'; --Sinal que sinaliza inicio de avaliação do fitness da função
-signal fready_eval : std_logic := '0';
+signal fready_eval : std_logic_vector(1 to NP) := (others => '0');
 
+--sinais para comparação das funções custo
+signal s_start_cmp_baleia : std_logic := '0';
+signal s_ready_cmp_baleia : std_logic := '0';
+signal best_baleia		  : std_logic_vector(3 downto 0);
+signal fitness_best_baleia: std_logic_vector(FP_WIDTH-1 downto 0);
 
 begin
+
+best_fitness <= fitness_best_baleia;
 
 -- Instanciação de componentes
 rand_px: lfsr_px
@@ -54,23 +66,45 @@ rand_px: lfsr_px
              init 		    => init_random,
              lfsr_out      => s_lfsr_out_px,
              ready         => s_ready_lfsr_px);
-
-whale_1 : sphere_whale
-	port map(
+				 
+--Instancia as 10 (NP) baleias e faz o port map
+whale_generate : for I in 1 to NP generate
+	whale : sphere_whale port map(
 		reset    => reset,
       clk      => clk,
       pstart   => pstart,
       pready   => pready,
 
       fstart   => s_start_eval,
-      x1_in    => s_nx(1,1),
-      x2_in    => s_nx(1,2),
-      x3_in    => s_nx(1,3),
-      x4_in    => s_nx(1,4),
-      x5_in    => s_nx(1,5),
-      x6_in    => s_nx(1,6),
-      f_out    => fout,
-      fready   => fready_eval
+      x1_in    => s_nx(I,1),
+      x2_in    => s_nx(I,2),
+      x3_in    => s_nx(I,3),
+      x4_in    => s_nx(I,4),
+      x5_in    => s_nx(I,5),
+      x6_in    => s_nx(I,6),
+      f_out    => fout(I),
+      fready   => fready_eval(I)
+	);
+end generate;
+								 
+cmp_whale: compara_baleias 
+	port map(
+		reset     			=> reset,
+      clk       			=> clk,
+      start_cmp_baleia 	=> s_start_cmp_baleia,
+      f_y_p1   			=> fout(1),
+      f_y_p2   			=> fout(2),
+      f_y_p3   			=> fout(3),
+      f_y_p4   			=> fout(4),
+      f_y_p5   			=> fout(5),
+      f_y_p6   			=> fout(6),
+      f_y_p7   			=> fout(7),
+      f_y_p8   			=> fout(8),
+      f_y_p9   			=> fout(9),
+		f_y_p10   			=> fout(10),
+      y_pj      			=> best_baleia,
+      cmpsc_out 			=> fitness_best_baleia,
+      ready_cmpsc 		=> s_ready_cmp_baleia
 	);
 
 								 
@@ -85,18 +119,18 @@ if rising_edge(clk) then
        --Resetar os sinais necessarios dps
    else
 
-       case state is 
-           when waiting =>
-               if i_start = '1' then
-                   s_start_lfsr_px <= '1';
-                   icp             := 1;
-                   icd             := 1;
-                   state 		    <= init_x;
-               else 
-						state <= waiting;
-               end if;
+		case state is 
+			when waiting =>
+				if i_start = '1' then
+					s_start_lfsr_px <= '1';
+               icp             := 1;
+               icd             := 1;
+               state 		    <= init_x;
+				else 
+					state <= waiting;
+				end if;
 
-		  when init_x =>
+			when init_x =>
 				s_start_lfsr_px <= '0';
 				if s_ready_lfsr_px = '1' then
 					 s_nx(icp,icd) <= s_lfsr_out_px;
@@ -118,20 +152,29 @@ if rising_edge(clk) then
 						  state <= init_x;
 					 end if;
 				else 
-						state <= init_x;
-               end if;
+					state <= init_x;
+				end if;
 
-           when fitness_x =>
-               s_start_eval <= '0';
+			when fitness_x =>
+				s_start_eval <= '0';
 --               s_start_inertia <= '0';
 --               icd := 1;
-               if fready_eval = '1' then
-                   --s_start_cmpsc <= '1';
---                   state <= compara_soc;
-						state <= waiting;
---               else state <= fitness_x;
-               end if;
-				when others => state <= waiting;
+				if fready_eval(1) = '1' then
+					 s_start_cmp_baleia <= '1';
+					 state <= verifica_best_fitness;						
+				else 
+					state <= fitness_x;
+				end if;
+				
+			when verifica_best_fitness =>
+				s_start_cmp_baleia <= '0';
+				
+				if s_ready_cmp_baleia = '1' then
+					state <= waiting;
+				end if;
+				
+			when others => state <= waiting;
+				
        end case;
    end if;
 end if;
