@@ -1,14 +1,14 @@
 ----------------------------------------------------------------------------------
 -- Company: 		 GRACO - UnB
--- Engineer: 		 Daniel Mauricio Muñoz
+-- Engineer: 		 Daniel Mauricio Muï¿½oz
 -- 
 -- Create Date:    20:39:00 02/18/2010 
--- Design Name: 	 U[0,2] random number using LFSR
+-- Design Name: 	 U[0,1] random number using LFSR
 -- Module Name:    lfsr_fixtofloat - Behavioral 
 -- Project Name:   PSO
 -- Target Devices: 
 -- Tool versions: 
--- Description:    generates U[0,2] using the LFSR 16 bits and converts from 
+-- Description:    generates U[0,1] using the LFSR 16 bits and converts from 
 -- 					 fixed point to floating point.
 -- Dependencies: 
 --
@@ -34,7 +34,8 @@ entity lfsr_fixtofloat_20bits is
 		  start     : in  std_logic;
 		  init      : in  std_logic_vector(7 downto 0);	
 		  lfsr_out  : out std_logic_vector(FP_WIDTH-1 downto 0);
-		  ready     : out std_logic);
+		  ready     : out std_logic
+		  );
 end lfsr_fixtofloat_20bits;
 
 architecture Behavioral of lfsr_fixtofloat_20bits is
@@ -117,7 +118,7 @@ begin
 		end if;
 	end process;
 	
-	lfsr_out(FP_WIDTH-1) <= exp_man(0);  -- revisar si genera numeros entre [-1,1]
+	lfsr_out(FP_WIDTH-1) <= '0';  -- modifiquei para gerar no range [0,1]
 	lfsr_out(FP_WIDTH-2 downto FRAC_WIDTH+4) <= "0111";
 	lfsr_out(FRAC_WIDTH+3 downto 0) <= exp_man(22 downto 1);
 --	lfsr_out(FRAC_WIDTH+3 downto 4) <= exp_man;

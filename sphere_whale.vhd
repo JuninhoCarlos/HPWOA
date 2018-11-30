@@ -8,16 +8,16 @@ use work.woapack.all;
 
 entity sphere_whale is
 	port (
-		reset    :  in std_logic;
-      clk      :  in std_logic;
-      pstart   :  in std_logic;
---      init     :  in std_logic_vector(7 downto 0);
---      weight   :  in std_logic_vector(FP_WIDTH-1 downto 0);
---      pos_act  :  in std_logic_vector(FP_WIDTH-1 downto 0);
---      best_ys  :  in std_logic_vector(FP_WIDTH-1 downto 0);
---      best_yi  :  in std_logic_vector(FP_WIDTH-1 downto 0);
---      new_pos  : out std_logic_vector(FP_WIDTH-1 downto 0);
-      pready   : out std_logic;
+		reset    		: in std_logic;
+      clk      		: in std_logic;
+      pstart   		: in std_logic;
+      init_1     		: in std_logic_vector(7 downto 0);		--serve para gerar o número aleatório
+      init_2			: in std_logic_vector(7 downto 0);
+		a   				: in std_logic_vector(FP_WIDTH-1 downto 0);
+      pos_act  		: in std_logic_vector(FP_WIDTH-1 downto 0);
+      pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);	
+      new_pos  		: out std_logic_vector(FP_WIDTH-1 downto 0);
+      pready   		: out std_logic;
 
       fstart   :  in std_logic;
       x1_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);
@@ -61,12 +61,27 @@ signal out_as		: std_logic_vector(FP_WIDTH-1 downto 0);
 signal ready_as	: std_logic;
 
 
-type   t_state is (waiting,multiplier,add1,acc);
+--Sinais que se comunicam com os geradores de num. aleatorios
+signal start_lfsr_1  : std_logic := '0';
+signal lfsr_out_1		: std_logic_vector(FP_WiDTH-1 downto 0);
+signal ready_lfsr_1	: std_logic := '0';
+
+
+signal start_lfsr_2  : std_logic := '0';
+signal lfsr_out_2		: std_logic_vector(FP_WiDTH-1 downto 0);
+signal ready_lfsr_2	: std_logic := '0';
+
+type   t_state is (waiting,multiplier,add1,acc,calculo_AC_1,calculo_AC_2,calculo_AC_3,calculo_AC_4);
 signal state : t_state;
+
+
+signal Azao	: std_logic_vector(FP_WIDTH-1 downto 0);
+signal C		: std_logic_vector(FP_WIDTH-1 downto 0);
 
 begin
 
 --Instanciação de componentes
+
 mul1: multiplierfsm_v2
    port map (reset         => reset,
              clk           => clk,
@@ -94,11 +109,27 @@ adsb: addsubfsm_v6
              start_i       => start_as,
              addsub_out    => out_as,
              ready_as      => ready_as);
-			 
+
+-- Essa unidade gera números aleatorios no range de [0,1]				 
+Random_1: lfsr_fixtofloat_20bits
+   port map (reset         => reset,
+             clk           => clk,
+             start         => start_lfsr_1,
+             init          => init_1,
+             lfsr_out      => lfsr_out_1,
+				 ready			=> ready_lfsr_1);
+
+-- Essa unidade gera números aleatorios no range de [0,1]				 				 
+Random_2: lfsr_fixtofloat_20bits
+   port map (reset         => reset,
+             clk           => clk,
+             start         => start_lfsr_2,
+             init          => init_2,
+             lfsr_out      => lfsr_out_2,
+				 ready			=> ready_lfsr_2);				 
 			 
 process(reset,clk,fstart)
-	variable acc_v   : std_logic_vector(FP_WIDTH-1 downto 0);
-   variable dim     : integer range 0 to 6;
+	variable acc_v   : std_logic_vector(FP_WIDTH-1 downto 0);   
 	
 	begin
 		if rising_edge(clk) then
@@ -115,6 +146,10 @@ process(reset,clk,fstart)
 				op_as      <= '0';
 				opA_as     <= (others => '0');
 				opB_as     <= (others => '0');
+				--Sinais dos geradores de num aleatorios
+				start_lfsr_1 <= '0';
+				start_lfsr_2 <= '0';
+				
 				
 				--Reseta sinais de controle da maquina de estados
 				acc_v    := (others => '0');
@@ -142,6 +177,56 @@ process(reset,clk,fstart)
 							opB_mul2       <= out_mux2;
 							start_mul2     <= '1';
 							state          <= multiplier;					
+						end if;
+						
+						if pstart = '1' then
+							start_lfsr_1 <= '1'; --gera os r's para calculo do A e do C
+							start_lfsr_2 <= '1';
+							opA_mul1 <= s_two;
+
+							state <= calculo_AC_1;
+						end if;
+					
+					when calculo_AC_1 =>
+						start_lfsr_1 <= '0';
+						start_lfsr_2 <= '0';
+						if ((ready_lfsr_1 and ready_lfsr_2) = '1') then
+							opA_mul1 <= s_two;
+							opB_mul1 <= lfsr_out_1;  
+							start_mul1 <= '1';		-- 2*r parte do (2*a*r)
+						
+							opA_mul2 <= s_two;
+							opB_mul2 <= lfsr_out_2;  
+							start_mul2 <= '1';	   -- 2*r (c = 2*r)							
+							state <= calculo_AC_2;
+						end if;
+					
+					when calculo_AC_2 =>
+						start_mul1 <= '0';
+						start_mul2 <= '0';
+						if((ready_mul1 and ready_mul2) = '1') then
+							opA_mul1 <= out_mul1;
+							opB_mul1 <= a;
+							start_mul1 <= '1';	-- 2*r*a
+							C <= out_mul2;
+							state <= calculo_AC_3;
+						end if;
+						
+					when calculo_AC_3 =>
+						start_mul1 <= '0';
+						if ready_mul1 = '1' then
+							opA_as <= out_mul1;
+							opB_as <= a;
+							op_as <= SUBTRACTION; 
+							start_as <= '1'; --2*a*r - a
+							state <= calculo_AC_4;
+						end if;
+					
+					when calculo_AC_4 =>
+						start_as <= '0';
+						if(ready_as = '1') then
+							Azao <= out_as;
+							state <= waiting; --tem que calcular mais coisas aqui
 						end if;
 					
 					when multiplier =>

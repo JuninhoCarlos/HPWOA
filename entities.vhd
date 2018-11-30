@@ -26,12 +26,15 @@ component a_minusculo is
 	);
 end component;
 
+-- Essa unidade gera números aleatorios no range de [0,1]				 
 component lfsr_fixtofloat_20bits	is
-port (reset     :  in std_logic;
-      clk       :  in std_logic;
-      start     :  in std_logic;
-      init      :  in std_logic_vector(7 downto 0);
-      lfsr_out  : out std_logic_vector(FP_WIDTH-1 downto 0));
+port (	
+	reset     : in  std_logic;
+	clk       : in  std_logic;
+	start     : in  std_logic;
+	init      : in  std_logic_vector(7 downto 0);	
+	lfsr_out  : out std_logic_vector(FP_WIDTH-1 downto 0);
+	ready     : out std_logic);
 end component;
 
 component lfsr_px is
@@ -85,16 +88,16 @@ end component;
 
 component sphere_whale is
 	port (
-		reset    :  in std_logic;
-      clk      :  in std_logic;
-      pstart   :  in std_logic;
---      init     :  in std_logic_vector(7 downto 0);
---      weight   :  in std_logic_vector(FP_WIDTH-1 downto 0);
---      pos_act  :  in std_logic_vector(FP_WIDTH-1 downto 0);
---      best_ys  :  in std_logic_vector(FP_WIDTH-1 downto 0);
---      best_yi  :  in std_logic_vector(FP_WIDTH-1 downto 0);
---      new_pos  : out std_logic_vector(FP_WIDTH-1 downto 0);
-      pready   : out std_logic;
+		reset    		: in std_logic;
+      clk      		: in std_logic;
+      pstart   		: in std_logic;
+      init_1     		: in std_logic_vector(7 downto 0);		--serve para gerar o número aleatório
+      init_2			: in std_logic_vector(7 downto 0);
+		a   				: in std_logic_vector(FP_WIDTH-1 downto 0);
+      pos_act  		: in std_logic_vector(FP_WIDTH-1 downto 0);
+      pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);	
+      new_pos  		: out std_logic_vector(FP_WIDTH-1 downto 0);
+      pready   		: out std_logic;
 
       fstart   :  in std_logic;
       x1_in    :  in std_logic_vector(FP_WIDTH-1 downto 0);

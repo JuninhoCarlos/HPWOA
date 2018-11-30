@@ -6,7 +6,8 @@ use work.entities.all;
 use work.fpupack.all;
 use work.woapack.all;
 
--- radix define float27 -float -fraction 18 comando para visualizar o valor
+-- radix define float27 -float -fraction 18 
+-- comando para visualizar o valor
 
 entity HPWOA is
 	port (
@@ -20,7 +21,7 @@ end HPWOA;
 architecture rlt of HPWOA is
 
 
-type   t_state is (waiting,init_x,fitness_x,verifica_best_fitness,update_params,update_positions);
+type   t_state is (waiting,init_x,fitness_x,verifica_best_fitness,updatep);
 signal state : t_state;
 
 --Sinal que indica o inicio do algoritmo
@@ -42,7 +43,7 @@ signal fout : matriz1D; --Sinal que possui o valor da função fitness para cada
 
 
 signal pstart : std_logic;
-signal pready : std_logic;
+signal pready : std_logic_vector(1 to NP);
 
 --Sinais para avaliação de função custo na particula
 signal s_start_eval : std_logic := '0'; --Sinal que sinaliza inicio de avaliação do fitness da função
@@ -60,6 +61,12 @@ signal s_start_inertia 	: std_logic;
 signal new_a				: std_logic_vector(FP_WIDTH-1 downto 0);
 signal ready_inertia		: std_logic;
 
+
+
+signal pos_atual_whale  : matriz1D;
+signal new_pos				: matriz1D;
+signal pos_best_whale : std_logic_vector(FP_WIDTH-1 downto 0);
+
 begin
 
 best_fitness <= fitness_best_baleia;
@@ -76,10 +83,16 @@ rand_px: lfsr_px
 --Instancia as 10 (NP) baleias e faz o port map
 whale_generate : for I in 1 to NP generate
 	whale : sphere_whale port map(
-		reset    => reset,
-      clk      => clk,
-      pstart   => pstart,
-      pready   => pready,
+		reset    		=> reset,
+      clk      		=> clk,
+      pstart   		=> pstart,
+		init_1     		=> init_p(I),
+		init_2			=> init_p(2),
+      a   				=> new_a,
+      pos_act  		=> pos_atual_whale(I),
+      pos_best_whale	=> pos_best_whale,
+      new_pos  		=> new_pos(I),
+      pready   		=> pready(I),
 
       fstart   => s_start_eval,
       x1_in    => s_nx(I,1),
@@ -153,7 +166,7 @@ if rising_edge(clk) then
 						  if icp = NP then
 								icp   := 1;
 								icd   := 1;
-								s_start_eval <= '1';
+								s_start_eval <= '1';								
 								state <= fitness_x;
 						  else
 								icd := 1;
@@ -172,8 +185,7 @@ if rising_edge(clk) then
 
 			when fitness_x =>
 				s_start_eval <= '0';
---               s_start_inertia <= '0';
---               icd := 1;
+				s_start_inertia <= '0';
 				if fready_eval(1) = '1' then
 					 s_start_cmp_baleia <= '1';
 					 state <= verifica_best_fitness;						
@@ -185,10 +197,21 @@ if rising_edge(clk) then
 				s_start_cmp_baleia <= '0';
 				
 				if s_ready_cmp_baleia = '1' then
-					state <= waiting;
+					pstart <= '1'; -- Inicia a atualizacao de posicao
+					state <= updatep;
 				end if;
 				
-			when others => state <= waiting;
+			when updatep =>
+				pstart <= '0';
+				if pready(1) = '1' then
+					state <= waiting;
+					s_start_inertia <= '1'; -- aqui faz a azinho decrementar
+				end if;
+									
+				
+			
+			when others => 
+				state <= waiting;
 				
        end case;
    end if;
