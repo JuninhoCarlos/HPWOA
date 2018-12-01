@@ -42,6 +42,11 @@ architecture Behavioral of lfsr_fixtofloat_20bits is
 
 --signal exp_man : std_logic_vector(19 downto 0) := (others => '0');
 signal exp_man : std_logic_vector(22 downto 0) := (others => '0');
+
+alias teste		: std_logic_vector(3 downto 0) is lfsr_out(3 downto 0);
+alias expoente : std_logic_vector(7 downto 0) is lfsr_out(FP_WIDTH-2 downto 18);
+alias fracao : std_logic_vector(17 downto 0) is lfsr_out(17 downto 0);
+
 constant taps : std_logic_vector(19 downto 0) := "10010000000000000000";
 
 	function one_to_many_fb (DATA, TAPS :std_logic_vector) return std_logic_vector is

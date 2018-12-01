@@ -13,6 +13,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use work.fpupack.all;
+use work.woapack.all;
 
 package Entities is
 
@@ -35,6 +36,17 @@ port (
 	init      : in  std_logic_vector(7 downto 0);	
 	lfsr_out  : out std_logic_vector(FP_WIDTH-1 downto 0);
 	ready     : out std_logic);
+end component;
+
+--Essa unidade sorteia uma das 10 baleias (utilizado na fase de exploração)
+component lfsr_select_whale is
+	port(reset     : in  std_logic;
+	     clk       : in  std_logic;
+		  start     : in  std_logic;
+		  init      : in  std_logic_vector(7 downto 0);	
+		  lfsr_out  : out std_logic_vector(NUM_BITS-1 downto 0);
+		  ready     : out std_logic
+		  );
 end component;
 
 component lfsr_px is
@@ -95,7 +107,8 @@ component sphere_whale is
       init_2			: in std_logic_vector(7 downto 0);
 		a   				: in std_logic_vector(FP_WIDTH-1 downto 0);
       pos_act  		: in std_logic_vector(FP_WIDTH-1 downto 0);
-      pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);	
+      pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);
+		pos_rand_whale : in std_logic_vector(FP_WIDTH-1 downto 0);
       new_pos  		: out std_logic_vector(FP_WIDTH-1 downto 0);
       pready   		: out std_logic;
 

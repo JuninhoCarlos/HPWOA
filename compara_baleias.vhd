@@ -2,11 +2,6 @@
 -- Company:       GRACO-UnB
 -- Engineer:      DANIEL MAURICIO MU�OZ ARBOLEDA
 -- 
--- Create Date:   06-Oct-2012 
--- Design name:   lfsr_fixtofloat
--- Module name:   lfsr_fixtofloat - behavioral
--- Description:   U[-1,1] and fireflies initialization 
--- Automatically generated using the vHFAgen.m v1.0
 -------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;

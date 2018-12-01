@@ -10,6 +10,8 @@ constant NP : integer := 10;
 --ND -> Número de dimensoes do problema
 constant ND : integer := 6;
 
+constant NUM_BITS : integer := 4; --quantidade de bits necessarios para mapear as baleias em um mux
+
 constant INITIAL_A_MINUSCULO : std_logic_vector(FP_WIDTH-1 downto 0) := s_two;
 constant A_SLOPE	: std_logic_vector(FP_WIDTH-1 downto 0) 				:= "101110110000001100010010011";
 

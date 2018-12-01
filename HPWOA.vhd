@@ -41,6 +41,9 @@ signal s_nx : matrix2D;
 type matriz1D is array (1 to NP) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal fout : matriz1D; --Sinal que possui o valor da função fitness para cada baleia
 
+type matrizPos is array (1 to ND) of std_logic_vector(FP_WIDTH-1 downto 0);
+signal leader_pos    : matrizPos;
+signal leader_score 	: std_logic_vector(FP_WIDTH-1 downto 0) := Inf;
 
 signal pstart : std_logic;
 signal pready : std_logic_vector(1 to NP);
@@ -62,10 +65,21 @@ signal new_a				: std_logic_vector(FP_WIDTH-1 downto 0);
 signal ready_inertia		: std_logic;
 
 
+signal best_baleia_from_mux : matriz1D;
 
 signal pos_atual_whale  : matriz1D;
+signal pos_rand_whale 	: matriz1D;
 signal new_pos				: matriz1D;
-signal pos_best_whale : std_logic_vector(FP_WIDTH-1 downto 0);
+signal pos_best_whale 	: std_logic_vector(FP_WIDTH-1 downto 0);
+
+--Sinais para gerar o X_rand da fase exploração
+type mux1D is array (1 to NP) of std_logic_vector(NUM_BITS-1 downto 0);
+
+
+signal s_start_rand	 	: std_logic := '0'; -- inicia o calculo de todos os x_rand em paralelo
+signal s_out_rand_whale : mux1D;
+signal ready_rand_whale	: std_logic_vector(1 to NP);
+
 
 begin
 
@@ -79,6 +93,19 @@ rand_px: lfsr_px
              init 		    => init_random,
              lfsr_out      => s_lfsr_out_px,
              ready         => s_ready_lfsr_px);
+
+--Rand whale
+rand_whale_generate: for I in 1 to NP generate
+	rand_whale: lfsr_select_whale port map(
+		reset     => reset,
+		clk       => clk,
+		start     => s_start_rand,
+		init      => init_p(I),
+		lfsr_out  => s_out_rand_whale(I),
+		ready     => ready_rand_whale(I)
+  );
+end generate;
+
 				 
 --Instancia as 10 (NP) baleias e faz o port map
 whale_generate : for I in 1 to NP generate
@@ -91,6 +118,7 @@ whale_generate : for I in 1 to NP generate
       a   				=> new_a,
       pos_act  		=> pos_atual_whale(I),
       pos_best_whale	=> pos_best_whale,
+		pos_rand_whale => pos_rand_whale(I),
       new_pos  		=> new_pos(I),
       pready   		=> pready(I),
 
@@ -144,7 +172,25 @@ begin
 if rising_edge(clk) then
    if reset='1' then
        state <= waiting;
-       --Resetar os sinais necessarios dps
+		 s_start_rand 		<= '0';
+		 s_start_lfsr_px 	<= '0';
+		 s_start_eval <= '0';
+		 s_start_inertia <= '0';
+		 s_start_cmp_baleia <= '0';
+		 
+		 pos_atual_whale(1) <= (others => '0');
+		 pos_atual_whale(2) <= (others => '0');
+		 pos_atual_whale(3) <= (others => '0');
+		 pos_atual_whale(4) <= (others => '0');
+		 pos_atual_whale(5) <= (others => '0');
+		 pos_atual_whale(6) <= (others => '0');
+		 pos_atual_whale(7) <= (others => '0');
+		 pos_atual_whale(8) <= (others => '0');
+		 pos_atual_whale(9) <= (others => '0');
+		 pos_atual_whale(10) <= (others => '0');
+		 		 
+		 pstart <= '0';
+       
    else
 
 		case state is 
@@ -187,7 +233,9 @@ if rising_edge(clk) then
 				s_start_eval <= '0';
 				s_start_inertia <= '0';
 				if fready_eval(1) = '1' then
-					 s_start_cmp_baleia <= '1';
+					 s_start_cmp_baleia <= '1';					 
+					 s_start_rand <= '1'; --Manda gerar o aleatorio para selecionar a baleia quando |A| > 1
+					 
 					 state <= verifica_best_fitness;						
 				else 
 					state <= fitness_x;
@@ -195,9 +243,24 @@ if rising_edge(clk) then
 				
 			when verifica_best_fitness =>
 				s_start_cmp_baleia <= '0';
+				s_start_rand <= '0'; -- O valor vai ficar armazenado no registrador s_out_rand_whale
+				
 				
 				if s_ready_cmp_baleia = '1' then
 					pstart <= '1'; -- Inicia a atualizacao de posicao
+					
+					pos_atual_whale(1) <= s_nx(1,1);
+					pos_atual_whale(2) <= s_nx(2,1);
+					pos_atual_whale(3) <= s_nx(3,1);
+					pos_atual_whale(4) <= s_nx(4,1);
+					pos_atual_whale(5) <= s_nx(5,1);
+					pos_atual_whale(6) <= s_nx(6,1);
+					pos_atual_whale(7) <= s_nx(7,1);
+					pos_atual_whale(8) <= s_nx(8,1);
+					pos_atual_whale(9) <= s_nx(9,1);
+					pos_atual_whale(10) <= s_nx(10,1);
+					
+					
 					state <= updatep;
 				end if;
 				
@@ -217,5 +280,58 @@ if rising_edge(clk) then
    end if;
 end if;
 end process;	
+
+--Processo para atualização da melhor baleia 
+process(clk, s_ready_cmp_baleia)
+begin
+	if rising_edge(clk) and s_ready_cmp_baleia = '1' then
+		if fitness_best_baleia < leader_score then --melhor baleia teve seu valor melhorado
+			leader_score <= fitness_best_baleia;
+			leader_pos(1) <= best_baleia_from_mux(1);
+			leader_pos(2) <= best_baleia_from_mux(2);
+			leader_pos(3) <= best_baleia_from_mux(3);
+			leader_pos(4) <= best_baleia_from_mux(4);
+			leader_pos(5) <= best_baleia_from_mux(5);
+			leader_pos(6) <= best_baleia_from_mux(6);
+		end if;
+	end if;
+end process;
+
+
+--Mux que seleciona a melhor baleia para cada dimensão
+mux_best_whale: for I in 1 to ND generate
+process(s_ready_cmp_baleia)
+begin
+	case best_baleia is
+		when "0000" => best_baleia_from_mux(I) <= s_nx(1,I);
+		when "0001" => best_baleia_from_mux(I) <= s_nx(2,I);
+		when "0010" => best_baleia_from_mux(I) <= s_nx(3,I);
+		when "0011" => best_baleia_from_mux(I) <= s_nx(4,I);
+		when "0100" => best_baleia_from_mux(I) <= s_nx(5,I);
+		when "0101" => best_baleia_from_mux(I) <= s_nx(6,I);
+		when "0110" => best_baleia_from_mux(I) <= s_nx(7,I);
+		when "0111" => best_baleia_from_mux(I) <= s_nx(8,I);
+		when "1000" => best_baleia_from_mux(I) <= s_nx(9,I);
+		when "1001" => best_baleia_from_mux(I) <= s_nx(10,I);
+		when others => best_baleia_from_mux(I) <= s_nx(1,I);	
+	end case;
+end process;
+end generate;
+
+--Multiplexadores que mandam
+muxes_rand_whale : for I in 1 to NP generate
+	with s_out_rand_whale(I) select
+		pos_rand_whale(I) <= pos_atual_whale(1)  when "0000",
+									pos_atual_whale(2)  when "0001",
+									pos_atual_whale(3)  when "0010",
+									pos_atual_whale(4)  when "0011",
+									pos_atual_whale(5)  when "0100",
+									pos_atual_whale(6)  when "0101",
+									pos_atual_whale(7)  when "0110",
+									pos_atual_whale(8)  when "0111",
+									pos_atual_whale(9)  when "1000",
+									pos_atual_whale(10) when others;
+									
+end generate;		
 
 end rlt;

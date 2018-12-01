@@ -15,7 +15,8 @@ entity sphere_whale is
       init_2			: in std_logic_vector(7 downto 0);
 		a   				: in std_logic_vector(FP_WIDTH-1 downto 0);
       pos_act  		: in std_logic_vector(FP_WIDTH-1 downto 0);
-      pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);	
+      pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);
+		pos_rand_whale : in std_logic_vector(FP_WIDTH-1 downto 0);
       new_pos  		: out std_logic_vector(FP_WIDTH-1 downto 0);
       pready   		: out std_logic;
 
