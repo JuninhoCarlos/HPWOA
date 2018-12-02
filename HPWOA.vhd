@@ -318,7 +318,7 @@ begin
 end process;
 end generate;
 
---Multiplexadores que mandam
+--Multiplexadores que manda a baleia aleatoria da fase de explocação
 muxes_rand_whale : for I in 1 to NP generate
 	with s_out_rand_whale(I) select
 		pos_rand_whale(I) <= pos_atual_whale(1)  when "0000",

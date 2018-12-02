@@ -62,6 +62,7 @@ signal out_as		: std_logic_vector(FP_WIDTH-1 downto 0);
 signal ready_as	: std_logic;
 
 
+
 --Sinais que se comunicam com os geradores de num. aleatorios
 signal start_lfsr_1  : std_logic := '0';
 signal lfsr_out_1		: std_logic_vector(FP_WiDTH-1 downto 0);
@@ -72,12 +73,17 @@ signal start_lfsr_2  : std_logic := '0';
 signal lfsr_out_2		: std_logic_vector(FP_WiDTH-1 downto 0);
 signal ready_lfsr_2	: std_logic := '0';
 
-type   t_state is (waiting,multiplier,add1,acc,calculo_AC_1,calculo_AC_2,calculo_AC_3,calculo_AC_4);
+type   t_state is (waiting,
+						multiplier,add1,acc, -- estados de cálculo da função custo
+						calculo_AC_1,calculo_AC_2,calculo_AC_3,calculo_AC_4, --Estados do calculo do A e do C
+						calculo_D_best, atualiza_pos,atualiza_pos_2,atualiza_pos_3 -- Estados que atualizam a posicao da particula
+						);
+						
 signal state : t_state;
 
 
-signal Azao	: std_logic_vector(FP_WIDTH-1 downto 0);
-signal C		: std_logic_vector(FP_WIDTH-1 downto 0);
+signal C_register		: std_logic_vector(FP_WIDTH-1 downto 0);
+signal A_register		: std_logic_vector(FP_WIDTH-1 downto 0);
 
 begin
 
@@ -110,7 +116,8 @@ adsb: addsubfsm_v6
              start_i       => start_as,
              addsub_out    => out_as,
              ready_as      => ready_as);
-
+			 
+				 
 -- Essa unidade gera números aleatorios no range de [0,1]				 
 Random_1: lfsr_fixtofloat_20bits
    port map (reset         => reset,
@@ -147,6 +154,8 @@ process(reset,clk,fstart)
 				op_as      <= '0';
 				opA_as     <= (others => '0');
 				opB_as     <= (others => '0');
+				
+				
 				--Sinais dos geradores de num aleatorios
 				start_lfsr_1 <= '0';
 				start_lfsr_2 <= '0';
@@ -156,6 +165,8 @@ process(reset,clk,fstart)
 				acc_v    := (others => '0');
 				count    <= (others => '0');
 				
+				C_register <= (others => '0');
+				A_register <= (others => '0');
 				--Reseta sinais de comunicação com a entidade externa
 				f_out    <= (others => '0');				
 				fready   <= '0';
@@ -184,7 +195,6 @@ process(reset,clk,fstart)
 							start_lfsr_1 <= '1'; --gera os r's para calculo do A e do C
 							start_lfsr_2 <= '1';
 							opA_mul1 <= s_two;
-
 							state <= calculo_AC_1;
 						end if;
 					
@@ -209,27 +219,83 @@ process(reset,clk,fstart)
 							opA_mul1 <= out_mul1;
 							opB_mul1 <= a;
 							start_mul1 <= '1';	-- 2*r*a
-							C <= out_mul2;
+						
+							C_register <= out_mul2;
 							state <= calculo_AC_3;
 						end if;
 						
 					when calculo_AC_3 =>
 						start_mul1 <= '0';
+						start_mul2 <= '0';
+						
 						if ready_mul1 = '1' then
 							opA_as <= out_mul1;
 							opB_as <= a;
 							op_as <= SUBTRACTION; 
 							start_as <= '1'; --2*a*r - a
+														
 							state <= calculo_AC_4;
+													
+							
 						end if;
 					
 					when calculo_AC_4 =>
-						start_as <= '0';
-						if(ready_as = '1') then
-							Azao <= out_as;
+						start_as <= '0';						
+						
+						if(ready_as = '1') then	
+						
+							A_register <= out_as;
+							
+							if '0'&out_as(FP_WIDTH-2 downto 0) < s_one then -- if |A| < 1
+								opA_mul1 <= C_register;
+								opB_mul1 <= pos_best_whale;	-- D = C*x_best								
+								start_mul1 <= '1';
+								state <= calculo_D_best; -- Vai em direcao ao best_whale								
+							else
+								-- Faz exploracao e vai em direcao de rand_whale
+							end if;
 							state <= waiting; --tem que calcular mais coisas aqui
 						end if;
 					
+					when calculo_D_best =>
+						start_mul1 <= '0';
+						if(ready_mul1 = '1') then
+							opA_as <= out_mul1;
+							opB_as <= pos_act;
+							op_as <= SUBTRACTION;		
+							start_as <= '1';							-- D = C*_best - pos_act			
+							state <= atualiza_pos;
+						end if;
+					
+					when atualiza_pos =>
+						start_as <= '0';
+						if(ready_as = '1') then
+							opA_mul1 <= A_register;
+							opB_mul1 <= '0'&out_as(FP_WIDTH-2 downto 0); -- A*D parte do x = x* - A*D //D= |c*x_best - pos_act|
+							start_mul1 <= '1';
+							state <= atualiza_pos_2;
+						end if;
+					
+					when atualiza_pos_2 =>
+						start_mul1 <= '0';
+						if (ready_mul1 = '1') then
+							opA_as <= pos_best_whale;
+							opB_as <= out_mul1;
+							op_as <= SUBTRACTION;
+							start_as <= '1';
+							state <= atualiza_pos_3;
+						end if;
+					
+					when atualiza_pos_3 =>
+						start_as <= '0';
+						if(ready_as = '1') then
+							pready <= '1';
+							new_pos <= out_as;
+							state <= waiting;
+						end if;
+
+					
+-- =======================       Estados para cálculo da função custo					
 					when multiplier =>
 						start_mul1     <= '0';
 						start_mul2     <= '0';
