@@ -15,7 +15,7 @@ entity sphere_whale is
       init_2			: in std_logic_vector(7 downto 0);
 		a   				: in std_logic_vector(FP_WIDTH-1 downto 0);
       pos_act  		: in std_logic_vector(FP_WIDTH-1 downto 0);
-      pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);
+				: in std_logic_vector(FP_WIDTH-1 downto 0);
 		pos_rand_whale : in std_logic_vector(FP_WIDTH-1 downto 0);
       new_pos  		: out std_logic_vector(FP_WIDTH-1 downto 0);
       pready   		: out std_logic;
@@ -84,6 +84,7 @@ signal state : t_state;
 
 signal C_register		: std_logic_vector(FP_WIDTH-1 downto 0);
 signal A_register		: std_logic_vector(FP_WIDTH-1 downto 0);
+signal pos_register	: std_logic_vecotr(FP_WIDTH-1 downto 0); -- Armazena a posição atual (rand ou best_whale) para atualização da posição dependendo do valor de |A|
 
 begin
 
@@ -165,8 +166,10 @@ process(reset,clk,fstart)
 				acc_v    := (others => '0');
 				count    <= (others => '0');
 				
-				C_register <= (others => '0');
-				A_register <= (others => '0');
+				C_register 		<= (others => '0');
+				A_register 		<= (others => '0');
+				pos_register 	<= (others => '0');
+				
 				--Reseta sinais de comunicação com a entidade externa
 				f_out    <= (others => '0');				
 				fready   <= '0';
@@ -246,15 +249,19 @@ process(reset,clk,fstart)
 						
 							A_register <= out_as;
 							
-							if '0'&out_as(FP_WIDTH-2 downto 0) < s_one then -- if |A| < 1
-								opA_mul1 <= C_register;
-								opB_mul1 <= pos_best_whale;	-- D = C*x_best								
-								start_mul1 <= '1';
-								state <= calculo_D_best; -- Vai em direcao ao best_whale								
+							opA_mul1 <= C_register;
+							
+							if '0'&out_as(FP_WIDTH-2 downto 0) < s_one then -- if |A| < 1								
+								opB_mul1 		<= pos_best_whale;	-- D = C*x_best																
+								pos_register 	<= pos_best_whale;								
 							else
 								-- Faz exploracao e vai em direcao de rand_whale
+								opB_mul1 		<= pos_rand_whale;
+								pos_register 	<= pos_rand_whale;								
 							end if;
-							state <= waiting; --tem que calcular mais coisas aqui
+							
+							start_mul1 <= '1';							
+							state <= calculo_D_best; --tem que calcular mais coisas aqui
 						end if;
 					
 					when calculo_D_best =>
@@ -263,7 +270,7 @@ process(reset,clk,fstart)
 							opA_as <= out_mul1;
 							opB_as <= pos_act;
 							op_as <= SUBTRACTION;		
-							start_as <= '1';							-- D = C*_best - pos_act			
+							start_as <= '1';							-- D = C*X(rand ou best) - pos_act			
 							state <= atualiza_pos;
 						end if;
 					
@@ -279,10 +286,10 @@ process(reset,clk,fstart)
 					when atualiza_pos_2 =>
 						start_mul1 <= '0';
 						if (ready_mul1 = '1') then
-							opA_as <= pos_best_whale;
+							opA_as <= pos_register;
 							opB_as <= out_mul1;
 							op_as <= SUBTRACTION;
-							start_as <= '1';
+							start_as <= '1';					-- X(t+1) = x(rand ou best) - A*D
 							state <= atualiza_pos_3;
 						end if;
 					
