@@ -13,8 +13,9 @@ entity HPWOA is
 	port (
 		reset    	:  in std_logic;
       clk      	:  in std_logic;
-		best_fitness: 	out std_logic_vector(FP_WIDTH-1 downto 0)
-      
+		i_start		: 	in std_logic;
+		best_fitness: 	out std_logic_vector(FP_WIDTH-1 downto 0);
+      ready			:  out std_logic
 	);
 end HPWOA;
 
@@ -25,7 +26,9 @@ type   t_state is (waiting,init_x,fitness_x,verifica_best_fitness,updatep, wait_
 signal state : t_state;
 
 --Sinal que indica o inicio do algoritmo
-signal i_start	 		: std_logic := '0';
+
+signal countIter		: integer range 1 to numIter := 1;
+signal lock_iter : std_logic := '0';
 
 
 --Sinais do gerador de números aleatorio para inicializacao das baleias
@@ -83,7 +86,7 @@ signal ready_rand_whale	: std_logic_vector(1 to NP);
 
 begin
 
-best_fitness <= fitness_best_baleia;
+best_fitness <= leader_score;
 
 -- Instanciação de componentes
 rand_px: lfsr_px
@@ -247,7 +250,7 @@ if rising_edge(clk) then
 				
 				
 				if s_ready_cmp_baleia = '1' then
-					pstart <= "01"; -- Inicia a atualizacao de posicao calculando A e C
+					
 					icd := 1;
 					
 					pos_atual_whale(1) <= s_nx(1,1);
@@ -261,10 +264,20 @@ if rising_edge(clk) then
 					pos_atual_whale(9) <= s_nx(9,1);
 					pos_atual_whale(10) <= s_nx(10,1);
 					
+					--Faz isso pq nesse ciclo não vai ter dado tempo de escrever no registrador leader_pos, então faz o forward do dado que vai pra ele
+					if  (fitness_best_baleia < leader_score) then
+						pos_best_whale <= best_baleia_from_mux(1); --x1 da melhor baleias, no proximos estados ler de leader_pos (registrador)
+					else
+						pos_best_whale <= leader_pos(1);
+					end if;
 					
-					pos_best_whale <= best_baleia_from_mux(1); --x1 da melhor baleias, no proximos estados ler de leader_pos (registrador)
-					
-					state <= updatep;
+					if countIter = numIter then
+						pstart <= "00";
+						state <= waiting;						
+					else
+						pstart <= "01"; -- Inicia a atualizacao de posicao calculando A e C
+						state <= updatep;
+					end if;
 				end if;
 				
 			when updatep =>				
@@ -304,7 +317,7 @@ if rising_edge(clk) then
 						pos_atual_whale(9)  <= s_nx(9,icd);
 						pos_atual_whale(10) <= s_nx(10,icd);
 						
-						pos_best_whale <= best_baleia_from_mux(icd);
+						pos_best_whale <= leader_pos(icd);
 						
 						
 						s_start_rand <= '1'; -- Manda gerar a baleia aleatoria para a outra dimensão
@@ -327,6 +340,33 @@ if rising_edge(clk) then
    end if;
 end if;
 end process;	
+
+
+process(reset,clk,i_start,s_ready_cmp_baleia)
+begin
+if rising_edge(clk) then
+	if reset = '1' then
+		countIter <= 1;
+		lock_iter <= '0';
+		ready <= '0';
+	else
+		if i_start = '1' then
+			countIter <= 1;
+         lock_iter <= '0';
+			ready <= '0';
+		elsif s_ready_cmp_baleia = '1' and lock_iter='0' then
+			countIter <= countIter+1;
+         lock_iter <= '0';
+			ready <= '0';
+		elsif countIter = numIter then
+			countIter <= numIter;
+			lock_iter <= '1';
+			ready <= '1';
+		end if;
+	end if;
+end if;
+end process;
+
 
 --Processo para atualização da melhor baleia 
 process(clk, s_ready_cmp_baleia)
