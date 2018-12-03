@@ -102,7 +102,7 @@ component sphere_whale is
 	port (
 		reset    		: in std_logic;
       clk      		: in std_logic;
-      pstart   		: in std_logic;
+      pstart   		: in std_logic_vector(1 downto 0);
       init_1     		: in std_logic_vector(7 downto 0);		--serve para gerar o número aleatório
       init_2			: in std_logic_vector(7 downto 0);
 		a   				: in std_logic_vector(FP_WIDTH-1 downto 0);

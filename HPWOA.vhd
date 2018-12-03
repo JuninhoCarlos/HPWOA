@@ -21,7 +21,7 @@ end HPWOA;
 architecture rlt of HPWOA is
 
 
-type   t_state is (waiting,init_x,fitness_x,verifica_best_fitness,updatep);
+type   t_state is (waiting,init_x,fitness_x,verifica_best_fitness,updatep, wait_rand);
 signal state : t_state;
 
 --Sinal que indica o inicio do algoritmo
@@ -45,7 +45,7 @@ type matrizPos is array (1 to ND) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal leader_pos    : matrizPos;
 signal leader_score 	: std_logic_vector(FP_WIDTH-1 downto 0) := Inf;
 
-signal pstart : std_logic;
+signal pstart : std_logic_vector(1 downto 0);
 signal pready : std_logic_vector(1 to NP);
 
 --Sinais para avaliação de função custo na particula
@@ -95,8 +95,8 @@ rand_px: lfsr_px
              ready         => s_ready_lfsr_px);
 
 --Rand whale
-rand_whale_generate: for I in 1 to NP generate
-	rand_whale: lfsr_select_whale port map(
+rand_generator: for I in 1 to NP generate
+	rand_generator: lfsr_select_whale port map(
 		reset     => reset,
 		clk       => clk,
 		start     => s_start_rand,
@@ -108,7 +108,7 @@ end generate;
 
 				 
 --Instancia as 10 (NP) baleias e faz o port map
-whale_generate : for I in 1 to NP generate
+whale: for I in 1 to NP generate
 	whale : sphere_whale port map(
 		reset    		=> reset,
       clk      		=> clk,
@@ -189,7 +189,7 @@ if rising_edge(clk) then
 		 pos_atual_whale(9) <= (others => '0');
 		 pos_atual_whale(10) <= (others => '0');
 		 		 
-		 pstart <= '0';
+		 pstart <= "00";
        
    else
 
@@ -247,7 +247,8 @@ if rising_edge(clk) then
 				
 				
 				if s_ready_cmp_baleia = '1' then
-					pstart <= '1'; -- Inicia a atualizacao de posicao
+					pstart <= "01"; -- Inicia a atualizacao de posicao calculando A e C
+					icd := 1;
 					
 					pos_atual_whale(1) <= s_nx(1,1);
 					pos_atual_whale(2) <= s_nx(2,1);
@@ -261,18 +262,64 @@ if rising_edge(clk) then
 					pos_atual_whale(10) <= s_nx(10,1);
 					
 					
+					pos_best_whale <= best_baleia_from_mux(1); --x1 da melhor baleias, no proximos estados ler de leader_pos (registrador)
+					
 					state <= updatep;
 				end if;
 				
-			when updatep =>
-				pstart <= '0';
+			when updatep =>				
+				pstart <= "00";
+				
 				if pready(1) = '1' then
-					state <= waiting;
-					s_start_inertia <= '1'; -- aqui faz a azinho decrementar
+					
+					--Atualizacao das dimensões das baleias para cada dimensão
+					s_nx(1,icd)  <= new_pos(1);
+					s_nx(2,icd)  <= new_pos(2);
+					s_nx(3,icd)  <= new_pos(3);
+					s_nx(4,icd)  <= new_pos(4);
+					s_nx(5,icd)  <= new_pos(5);
+					s_nx(6,icd)  <= new_pos(6);
+					s_nx(7,icd)  <= new_pos(7);
+					s_nx(8,icd)  <= new_pos(8);
+					s_nx(9,icd)  <= new_pos(9);
+					s_nx(10,icd) <= new_pos(10);
+					
+					
+					if icd = ND then
+						icd := 1;
+						s_start_inertia <= '1'; -- aqui faz a azinho decrementar
+						s_start_eval <= '1';  
+						pstart <= "00";
+						state <= fitness_x;
+					else
+						icd := icd + 1;
+						pos_atual_whale(1)  <= s_nx(1,icd);
+						pos_atual_whale(2)  <= s_nx(2,icd);
+						pos_atual_whale(3)  <= s_nx(3,icd);
+						pos_atual_whale(4)  <= s_nx(4,icd);
+						pos_atual_whale(5)  <= s_nx(5,icd);
+						pos_atual_whale(6)  <= s_nx(6,icd);
+						pos_atual_whale(7)  <= s_nx(7,icd);
+						pos_atual_whale(8)  <= s_nx(8,icd);
+						pos_atual_whale(9)  <= s_nx(9,icd);
+						pos_atual_whale(10) <= s_nx(10,icd);
+						
+						pos_best_whale <= best_baleia_from_mux(icd);
+						
+						
+						s_start_rand <= '1'; -- Manda gerar a baleia aleatoria para a outra dimensão
+						state <= wait_rand;
+					end if;
+					
+					
 				end if;
 									
+			when wait_rand => 
+				--Numero aleatorio fica pronto em 1 ciclo;
+				s_start_rand <= '0';
+				pstart <= "10"; -- atualizacao da posicao usando A e C ja calculado da dimensao 1
+				state <= updatep;		
 				
-			
 			when others => 
 				state <= waiting;
 				

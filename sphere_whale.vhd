@@ -10,12 +10,12 @@ entity sphere_whale is
 	port (
 		reset    		: in std_logic;
       clk      		: in std_logic;
-      pstart   		: in std_logic;
+      pstart   		: in std_logic_vector(1 downto 0); -- "01" ->calcula A e C; "10" -> nao calcula A e C; -- "00" -> faz nada
       init_1     		: in std_logic_vector(7 downto 0);		--serve para gerar o número aleatório
       init_2			: in std_logic_vector(7 downto 0);
 		a   				: in std_logic_vector(FP_WIDTH-1 downto 0);
       pos_act  		: in std_logic_vector(FP_WIDTH-1 downto 0);
-				: in std_logic_vector(FP_WIDTH-1 downto 0);
+		pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);
 		pos_rand_whale : in std_logic_vector(FP_WIDTH-1 downto 0);
       new_pos  		: out std_logic_vector(FP_WIDTH-1 downto 0);
       pready   		: out std_logic;
@@ -76,7 +76,7 @@ signal ready_lfsr_2	: std_logic := '0';
 type   t_state is (waiting,
 						multiplier,add1,acc, -- estados de cálculo da função custo
 						calculo_AC_1,calculo_AC_2,calculo_AC_3,calculo_AC_4, --Estados do calculo do A e do C
-						calculo_D_best, atualiza_pos,atualiza_pos_2,atualiza_pos_3 -- Estados que atualizam a posicao da particula
+						calculo_D, atualiza_pos,atualiza_pos_2,atualiza_pos_3 -- Estados que atualizam a posicao da particula
 						);
 						
 signal state : t_state;
@@ -84,7 +84,7 @@ signal state : t_state;
 
 signal C_register		: std_logic_vector(FP_WIDTH-1 downto 0);
 signal A_register		: std_logic_vector(FP_WIDTH-1 downto 0);
-signal pos_register	: std_logic_vecotr(FP_WIDTH-1 downto 0); -- Armazena a posição atual (rand ou best_whale) para atualização da posição dependendo do valor de |A|
+signal pos_register	: std_logic_vector(FP_WIDTH-1 downto 0); -- Armazena a posição atual (rand ou best_whale) para atualização da posição dependendo do valor de |A|
 
 begin
 
@@ -194,13 +194,28 @@ process(reset,clk,fstart)
 							state          <= multiplier;					
 						end if;
 						
-						if pstart = '1' then
+						if pstart = "01" then
 							start_lfsr_1 <= '1'; --gera os r's para calculo do A e do C
 							start_lfsr_2 <= '1';
 							opA_mul1 <= s_two;
 							state <= calculo_AC_1;
 						end if;
-					
+						
+						if pstart = "10" then
+							opA_mul1 <= C_register;
+							
+							if '0'&A_register(FP_WIDTH-2 downto 0) < s_one then -- if |A| < 1								
+								opB_mul1 		<= pos_best_whale;	-- D = C*x_best																
+								pos_register 	<= pos_best_whale;								
+							else
+								-- Faz exploracao e vai em direcao de rand_whale
+								opB_mul1 		<= pos_rand_whale;
+								pos_register 	<= pos_rand_whale;								
+							end if;							
+							start_mul1 <= '1';							
+							state <= calculo_D;
+						end if;
+						
 					when calculo_AC_1 =>
 						start_lfsr_1 <= '0';
 						start_lfsr_2 <= '0';
@@ -261,10 +276,10 @@ process(reset,clk,fstart)
 							end if;
 							
 							start_mul1 <= '1';							
-							state <= calculo_D_best; --tem que calcular mais coisas aqui
+							state <= calculo_D; 
 						end if;
 					
-					when calculo_D_best =>
+					when calculo_D =>
 						start_mul1 <= '0';
 						if(ready_mul1 = '1') then
 							opA_as <= out_mul1;
