@@ -17,7 +17,7 @@ constant INITIAL_A_MINUSCULO : std_logic_vector(FP_WIDTH-1 downto 0) := s_two;
 constant A_SLOPE	: std_logic_vector(FP_WIDTH-1 downto 0) 				:= "101110110000001100010010011"; -- 0.002
 
 constant INITIAL_A2	: std_logic_vector(FP_WIDTH-1 downto 0) 			:= "101111111000000000100000110"; -- -1.001
-constant A2_SLOPE		: std_logic_vector(FP_WIDTH-1 downto 0)			:= "001110101000001100010010011"; -- 0.001
+constant A2_SLOPE		: std_logic_vector(FP_WIDTH-1 downto 0)			:= "101110101000001100010010011"; -- 0.001
 
 constant numIter  : integer := 1000;
 

@@ -90,7 +90,7 @@ if rising_edge(clk) then
 				if start = '1' then
 					s_op_a_add 		<= s_new_weight;
 					s_op_b_add 		<= SLOPE;
-					s_start_addsub <= SUBTRACTION;
+					s_start_addsub <= '1';
 					state 			<= addition;
 				else state <= waiting;
 				end if;							
