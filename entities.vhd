@@ -27,6 +27,26 @@ component a_minusculo is
 	);
 end component;
 
+component cordic_exp is
+	port(reset	:  in std_logic;
+	     clk	:  in std_logic;
+		 start	:  in std_logic;
+		 Ain	:  in std_logic_vector(FP_WIDTH-1 downto 0);
+		 exp    : out std_logic_vector(FP_WIDTH-1 downto 0);
+		 ready  : out std_logic);
+end component;
+
+
+component cordic_sincos is
+	port(reset	:  in std_logic;
+	     clk	:  in std_logic;
+		 start	:  in std_logic;
+		 Ain	:  in std_logic_vector(FP_WIDTH-1 downto 0);
+		 sin    : out std_logic_vector(FP_WIDTH-1 downto 0);
+		 cos	: out std_logic_vector(FP_WIDTH-1 downto 0);
+		 ready  : out std_logic);
+end component;
+
 -- Essa unidade gera números aleatorios no range de [0,1]				 
 component lfsr_fixtofloat_20bits	is
 port (	
@@ -102,10 +122,11 @@ component sphere_whale is
 	port (
 		reset    		: in std_logic;
       clk      		: in std_logic;
-      pstart   		: in std_logic_vector(1 downto 0);
+      pstart   		: in std_logic_vector(2 downto 0);
       init_1     		: in std_logic_vector(7 downto 0);		--serve para gerar o número aleatório
       init_2			: in std_logic_vector(7 downto 0);
 		a   				: in std_logic_vector(FP_WIDTH-1 downto 0);
+		a2					: in std_logic_vector(FP_WIDTH-1 downto 0);
       pos_act  		: in std_logic_vector(FP_WIDTH-1 downto 0);
       pos_best_whale	: in std_logic_vector(FP_WIDTH-1 downto 0);
 		pos_rand_whale : in std_logic_vector(FP_WIDTH-1 downto 0);
@@ -125,4 +146,24 @@ component sphere_whale is
 end component;
 
 
-end Entities;
+component decFP is
+	port (reset     :  in std_logic;
+		 clk        :  in std_logic;
+		 start      :  in std_logic;
+		 Xin        :  in std_logic_vector(FP_WIDTH-1 downto 0);
+		 intX       : out std_logic_vector(EXP_WIDTH-1 downto 0);
+		 decX       : out std_logic_vector(FP_WIDTH-1 downto 0);
+		 ready      : out std_logic);
+end component;
+
+component decFP_quad is
+	port (reset     :  in std_logic;
+		 clk        :  in std_logic;
+		 start      :  in std_logic;
+		 Xin        :  in std_logic_vector(FP_WIDTH-1 downto 0);
+		 quad       : out std_logic_vector(1 downto 0);
+		 decX       : out std_logic_vector(FP_WIDTH-1 downto 0);
+		 ready      : out std_logic);
+end component;
+
+end package;

@@ -27,7 +27,7 @@ signal state : t_state;
 
 --Sinal que indica o inicio do algoritmo
 
-signal countIter		: integer range 1 to numIter := 1;
+signal countIter		: integer range 0 to numIter := 0;
 signal lock_iter : std_logic := '0';
 
 
@@ -48,7 +48,7 @@ type matrizPos is array (1 to ND) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal leader_pos    : matrizPos;
 signal leader_score 	: std_logic_vector(FP_WIDTH-1 downto 0) := Inf;
 
-signal pstart : std_logic_vector(1 downto 0);
+signal pstart : std_logic_vector(2 downto 0);
 signal pready : std_logic_vector(1 to NP);
 
 --Sinais para avaliação de função custo na particula
@@ -67,6 +67,8 @@ signal s_start_inertia 	: std_logic;
 signal new_a				: std_logic_vector(FP_WIDTH-1 downto 0);
 signal ready_inertia		: std_logic;
 
+--Sinais para calculo do a2
+signal new_a2 				: std_logic_vector(FP_WIDTH-1 downto 0);
 
 signal best_baleia_from_mux : matriz1D;
 
@@ -119,6 +121,7 @@ whale: for I in 1 to NP generate
 		init_1     		=> init_p(I),
 		init_2			=> init_p(2),
       a   				=> new_a,
+		a2					=> new_a2,
       pos_act  		=> pos_atual_whale(I),
       pos_best_whale	=> pos_best_whale,
 		pos_rand_whale => pos_rand_whale(I),
@@ -192,7 +195,7 @@ if rising_edge(clk) then
 		 pos_atual_whale(9) <= (others => '0');
 		 pos_atual_whale(10) <= (others => '0');
 		 		 
-		 pstart <= "00";
+		 pstart <= "000"; 
        
    else
 
@@ -272,16 +275,16 @@ if rising_edge(clk) then
 					end if;
 					
 					if countIter = numIter then
-						pstart <= "00";
+						pstart <= "000";
 						state <= waiting;						
 					else
-						pstart <= "01"; -- Inicia a atualizacao de posicao calculando A e C
+						pstart <= "001"; -- Inicia a atualizacao de posicao calculando A e C
 						state <= updatep;
 					end if;
 				end if;
 				
 			when updatep =>				
-				pstart <= "00";
+				pstart <= "000";
 				
 				if pready(1) = '1' then
 					
@@ -302,7 +305,7 @@ if rising_edge(clk) then
 						icd := 1;
 						s_start_inertia <= '1'; -- aqui faz a azinho decrementar
 						s_start_eval <= '1';  
-						pstart <= "00";
+						pstart <= "000";
 						state <= fitness_x;
 					else
 						icd := icd + 1;
@@ -330,7 +333,7 @@ if rising_edge(clk) then
 			when wait_rand => 
 				--Numero aleatorio fica pronto em 1 ciclo;
 				s_start_rand <= '0';
-				pstart <= "10"; -- atualizacao da posicao usando A e C ja calculado da dimensao 1
+				pstart <= "010"; -- atualizacao da posicao usando A e C ja calculado da dimensao 1
 				state <= updatep;		
 				
 			when others => 
@@ -346,12 +349,12 @@ process(reset,clk,i_start,s_ready_cmp_baleia)
 begin
 if rising_edge(clk) then
 	if reset = '1' then
-		countIter <= 1;
+		countIter <= 0;
 		lock_iter <= '0';
 		ready <= '0';
 	else
 		if i_start = '1' then
-			countIter <= 1;
+			countIter <= 0;
          lock_iter <= '0';
 			ready <= '0';
 		elsif s_ready_cmp_baleia = '1' and lock_iter='0' then

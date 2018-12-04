@@ -19,6 +19,8 @@ constant EXP_WIDTH : integer := 8;
 constant FP_WIDTH : integer:= FRAC_WIDTH+EXP_WIDTH+1;
 
 constant bias : std_logic_vector(EXP_WIDTH-1 downto 0) := "01111111";
+constant bias_MIN : std_logic_vector(EXP_WIDTH-1 downto 0) := "01110101";
+
 constant int_bias : integer := 127;
 constant int_alin : integer := 255;
 constant EXP_DF : std_logic_vector(EXP_WIDTH-1 downto 0) := "10000010";
@@ -34,6 +36,16 @@ constant s_pi2 : std_logic_vector(FP_WIDTH-1 downto 0) := "001111111100100100001
 constant s_pi : std_logic_vector(FP_WIDTH-1 downto 0) := "010000000100100100001111110";
 constant s_3pi2 : std_logic_vector(FP_WIDTH-1 downto 0) := "010000001001011011001011111";
 constant s_2pi : std_logic_vector(FP_WIDTH-1 downto 0) := "010000001100100100001111110";
+constant s_pid2 : std_logic_vector(FP_WIDTH-1 downto 0) := "001111111100100100001111110";
+
+--constantes para cosseno e exponencial
+constant P	: std_logic_vector(FP_WIDTH-1 downto 0) := "001111110001101101110100111"; --PROD[cos(atan(1/2^i))]
+constant s_2dpi : std_logic_vector(FP_WIDTH-1 downto 0) := "001111110010001011111001100";
+constant log2e	: std_logic_vector(FP_WIDTH-1 downto 0) := "001111111011100010101010001";
+constant ilog2e	: std_logic_vector(FP_WIDTH-1 downto 0) := "001111110011000101110010000";
+constant d_043 	: std_logic_vector(FP_WIDTH-1 downto 0) := "001111010011000010001001101";
+constant Phyp	: std_logic_vector(FP_WIDTH-1 downto 0) := "001111111001101001000001111"; --PROD[cosh(atanh(1/2^i))]
+
 
 constant MAX_ITER_CORDIC : std_logic_vector(4 downto 0):= "01111";
 constant MAX_POLY_MACKLR : std_logic_vector(3 downto 0):= "0011";
