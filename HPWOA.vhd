@@ -41,8 +41,15 @@ signal s_ready_lfsr_px 	: std_logic := '0';
 type matrix2D is array (1 to NP, 1 to ND) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal s_nx : matrix2D;
 
+
+
 type matriz1D is array (1 to NP) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal fout : matriz1D; --Sinal que possui o valor da função fitness para cada baleia
+
+--gera os p para o sorteio
+signal p_sorteio : matriz1D;
+signal start_lfsr_p : std_logic;
+signal ready_lfsr_p : std_logic_vector(1 to NP);
 
 type matrizPos is array (1 to ND) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal leader_pos    : matrizPos;
@@ -69,6 +76,7 @@ signal ready_inertia		: std_logic;
 
 --Sinais para calculo do a2
 signal new_a2 				: std_logic_vector(FP_WIDTH-1 downto 0);
+signal ready_a2			: std_logic;
 
 signal best_baleia_from_mux : matriz1D;
 
@@ -99,6 +107,17 @@ rand_px: lfsr_px
              lfsr_out      => s_lfsr_out_px,
              ready         => s_ready_lfsr_px);
 
+p_generator: for I in 1 to NP generate
+	p_sort: lfsr_fixtofloat_20bits   port map (
+				reset         => reset,
+            clk           => clk,
+            start         => start_lfsr_p,
+            init          => init_p(I),
+            lfsr_out      => p_sorteio(I),
+				ready			=> ready_lfsr_p(I)
+	);
+end generate;
+				 
 --Rand whale
 rand_generator: for I in 1 to NP generate
 	rand_generator: lfsr_select_whale port map(
@@ -161,6 +180,10 @@ cmp_whale: compara_baleias
 	);
 
 inertia : a_minusculo 
+	generic map(
+		INITIAL_VALUE => INITIAL_A_MINUSCULO,
+		SLOPE => A_SLOPE
+	)
 	port map (
 		reset    		=> reset,
 		clk      		=> clk,
@@ -169,6 +192,18 @@ inertia : a_minusculo
 		ready_inerti	=> ready_inertia
 	);
 
+a2: a_minusculo
+	generic map(
+		INITIAL_VALUE 	=> INITIAL_A2,
+		SLOPE 			=> A2_SLOPE
+	)
+	port map(
+		reset => reset,
+		clk 	=> clk,
+		start	=> s_start_inertia,
+		new_weight => new_a2,
+		ready_inerti => ready_a2
+	);
 								 
 --Máquina de estados que controla as baleias
 process(clk,reset,i_start)
@@ -183,6 +218,8 @@ if rising_edge(clk) then
 		 s_start_eval <= '0';
 		 s_start_inertia <= '0';
 		 s_start_cmp_baleia <= '0';
+		 
+		 start_lfsr_p <= '0';
 		 
 		 pos_atual_whale(1) <= (others => '0');
 		 pos_atual_whale(2) <= (others => '0');
@@ -241,7 +278,7 @@ if rising_edge(clk) then
 				if fready_eval(1) = '1' then
 					 s_start_cmp_baleia <= '1';					 
 					 s_start_rand <= '1'; --Manda gerar o aleatorio para selecionar a baleia quando |A| > 1
-					 
+					 start_lfsr_p <= '1'; --Manda sortear como vai ser a atualizacao da proxima iteracao
 					 state <= verifica_best_fitness;						
 				else 
 					state <= fitness_x;
@@ -250,7 +287,7 @@ if rising_edge(clk) then
 			when verifica_best_fitness =>
 				s_start_cmp_baleia <= '0';
 				s_start_rand <= '0'; -- O valor vai ficar armazenado no registrador s_out_rand_whale
-				
+				start_lfsr_p <= '0'; -- Os valores do sorteio vai estar no registrador de saida do lfsr_p
 				
 				if s_ready_cmp_baleia = '1' then
 					

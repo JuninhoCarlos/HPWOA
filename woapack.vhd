@@ -12,8 +12,12 @@ constant ND : integer := 6;
 
 constant NUM_BITS : integer := 4; --quantidade de bits necessarios para mapear as baleias em um mux
 
+--REVER ESSES VALORES SE MUDAR A QUANTIDE DE ITERACOES
 constant INITIAL_A_MINUSCULO : std_logic_vector(FP_WIDTH-1 downto 0) := s_two;
-constant A_SLOPE	: std_logic_vector(FP_WIDTH-1 downto 0) 				:= "101110110000001100010010011";
+constant A_SLOPE	: std_logic_vector(FP_WIDTH-1 downto 0) 				:= "101110110000001100010010011"; -- 0.002
+
+constant INITIAL_A2	: std_logic_vector(FP_WIDTH-1 downto 0) 			:= "101111111000000000100000110"; -- -1.001
+constant A2_SLOPE		: std_logic_vector(FP_WIDTH-1 downto 0)			:= "001110101000001100010010011"; -- 0.001
 
 constant numIter  : integer := 1000;
 

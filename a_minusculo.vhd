@@ -31,6 +31,10 @@ use work.woapack.all;
 --use UNISIM.VComponents.all;
 
 entity a_minusculo is
+	generic(
+		INITIAL_VALUE : std_logic_vector(FP_WIDTH-1 downto 0);
+		SLOPE			  : std_logic_vector(FP_WIDTH-1 downto 0)
+	);
 	port(
 		reset       : in  std_logic;
 		clk      	  : in  std_logic;
@@ -78,15 +82,15 @@ if rising_edge(clk) then
 		state 		 <= waiting;
 		s_op 			 <= '0';					 -- soma				
 		ready_inerti <= '0';
-		s_new_weight <= INITIAL_A_MINUSCULO; 
+		s_new_weight <= INITIAL_VALUE; 
 	else
 		case state is 
 			when waiting =>
 				ready_inerti 	<= '0';	
 				if start = '1' then
 					s_op_a_add 		<= s_new_weight;
-					s_op_b_add 		<= A_SLOPE;
-					s_start_addsub <= '1';
+					s_op_b_add 		<= SLOPE;
+					s_start_addsub <= SUBTRACTION;
 					state 			<= addition;
 				else state <= waiting;
 				end if;							

@@ -18,6 +18,10 @@ use work.woapack.all;
 package Entities is
 
 component a_minusculo is
+	generic(
+		INITIAL_VALUE : std_logic_vector(FP_WIDTH-1 downto 0);
+		SLOPE			  : std_logic_vector(FP_WIDTH-1 downto 0)
+	);
 	port(
 		reset       : in  std_logic;
 		clk      	  : in  std_logic;
