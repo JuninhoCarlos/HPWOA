@@ -28,6 +28,7 @@ constant bias_MAX : std_logic_vector(EXP_WIDTH-1 downto 0) := "10000111";
 constant EXP_ONE: std_logic_vector(EXP_WIDTH-1 downto 0):= (others => '1');
 
 constant s_one : std_logic_vector(FP_WIDTH-1 downto 0) := "001111111000000000000000000";
+constant s_meio: std_logic_vector(FP_WIDTH-1 downto 0) := "001111110000000000000000000";
 constant s_two : std_logic_vector(FP_WIDTH-1 downto 0) := "010000000000000000000000000";
 constant s_ten : std_logic_vector(FP_WIDTH-1 downto 0) := "010000010010000000000000000";
 constant s_twn : std_logic_vector(FP_WIDTH-1 downto 0) := "010000011010000000000000000";

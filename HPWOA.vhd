@@ -55,8 +55,12 @@ type matrizPos is array (1 to ND) of std_logic_vector(FP_WIDTH-1 downto 0);
 signal leader_pos    : matrizPos;
 signal leader_score 	: std_logic_vector(FP_WIDTH-1 downto 0) := Inf;
 
-signal pstart : std_logic_vector(2 downto 0);
+type arrayPstart is array (1 to NP) of std_logic_vector(2 downto 0);
+signal pstart : arrayPstart;
+
 signal pready : std_logic_vector(1 to NP);
+
+signal muxAtualizaPos : std_logic_vector(1 to NP);
 
 --Sinais para avaliação de função custo na particula
 signal s_start_eval : std_logic := '0'; --Sinal que sinaliza inicio de avaliação do fitness da função
@@ -136,7 +140,7 @@ whale: for I in 1 to NP generate
 	whale : sphere_whale port map(
 		reset    		=> reset,
       clk      		=> clk,
-      pstart   		=> pstart,
+      pstart   		=> pstart(I),
 		init_1     		=> init_p(I),
 		init_2			=> init_p(2),
       a   				=> new_a,
@@ -221,18 +225,10 @@ if rising_edge(clk) then
 		 
 		 start_lfsr_p <= '0';
 		 
-		 pos_atual_whale(1) <= (others => '0');
-		 pos_atual_whale(2) <= (others => '0');
-		 pos_atual_whale(3) <= (others => '0');
-		 pos_atual_whale(4) <= (others => '0');
-		 pos_atual_whale(5) <= (others => '0');
-		 pos_atual_whale(6) <= (others => '0');
-		 pos_atual_whale(7) <= (others => '0');
-		 pos_atual_whale(8) <= (others => '0');
-		 pos_atual_whale(9) <= (others => '0');
-		 pos_atual_whale(10) <= (others => '0');
-		 		 
-		 pstart <= "000"; 
+		 for I in 1 to NP loop
+			pos_atual_whale(I) <= (others => '0');
+			pstart(I) <= "000"; 
+		 end loop;
        
    else
 
@@ -312,54 +308,55 @@ if rising_edge(clk) then
 					end if;
 					
 					if countIter = numIter then
-						pstart <= "000";
+						
+						for I in 1 to NP loop --Multiplexador para selecionar a forma de atualizacao da particula
+							pstart(I) <= "000";
+						end loop;
+						
 						state <= waiting;						
 					else
-						pstart <= "001"; -- Inicia a atualizacao de posicao calculando A e C
+						
+						for I in 1 to NP loop
+							if muXAtualizaPos(I) = '0' then
+								pstart(I) <= "001"; -- Inicia a atualizacao de posicao calculando A e C
+							else
+								pstart(I) <= "011"; -- Inicia a atualizacao de posição em espiral calculando L
+							end if;							
+						end loop;						
 						state <= updatep;
 					end if;
 				end if;
 				
-			when updatep =>				
-				pstart <= "000";
+			when updatep =>
+				for I in 1 to NP loop
+					pstart(I) <= "000";
+				end loop;
+				
 				
 				if pready(1) = '1' then
 					
 					--Atualizacao das dimensões das baleias para cada dimensão
-					s_nx(1,icd)  <= new_pos(1);
-					s_nx(2,icd)  <= new_pos(2);
-					s_nx(3,icd)  <= new_pos(3);
-					s_nx(4,icd)  <= new_pos(4);
-					s_nx(5,icd)  <= new_pos(5);
-					s_nx(6,icd)  <= new_pos(6);
-					s_nx(7,icd)  <= new_pos(7);
-					s_nx(8,icd)  <= new_pos(8);
-					s_nx(9,icd)  <= new_pos(9);
-					s_nx(10,icd) <= new_pos(10);
-					
+					for I in 1 to NP loop
+						s_nx(I,icd)  <= new_pos(I);
+					end loop;
 					
 					if icd = ND then
 						icd := 1;
 						s_start_inertia <= '1'; -- aqui faz a azinho decrementar
 						s_start_eval <= '1';  
-						pstart <= "000";
+						
+						for I in 1 to NP loop
+							pstart(I) <= "000";
+						end loop;
 						state <= fitness_x;
 					else
+					
 						icd := icd + 1;
-						pos_atual_whale(1)  <= s_nx(1,icd);
-						pos_atual_whale(2)  <= s_nx(2,icd);
-						pos_atual_whale(3)  <= s_nx(3,icd);
-						pos_atual_whale(4)  <= s_nx(4,icd);
-						pos_atual_whale(5)  <= s_nx(5,icd);
-						pos_atual_whale(6)  <= s_nx(6,icd);
-						pos_atual_whale(7)  <= s_nx(7,icd);
-						pos_atual_whale(8)  <= s_nx(8,icd);
-						pos_atual_whale(9)  <= s_nx(9,icd);
-						pos_atual_whale(10) <= s_nx(10,icd);
-						
+						for I in 1 to NP loop
+							pos_atual_whale(I)  <= s_nx(I,icd);
+						end loop;
+					
 						pos_best_whale <= leader_pos(icd);
-						
-						
 						s_start_rand <= '1'; -- Manda gerar a baleia aleatoria para a outra dimensão
 						state <= wait_rand;
 					end if;
@@ -370,7 +367,16 @@ if rising_edge(clk) then
 			when wait_rand => 
 				--Numero aleatorio fica pronto em 1 ciclo;
 				s_start_rand <= '0';
-				pstart <= "010"; -- atualizacao da posicao usando A e C ja calculado da dimensao 1
+				
+				for I in 1 to NP loop
+					if muxAtualizaPos(I) = '1' then
+						pstart(I) <= "010"; -- atualizacao da posicao usando A e C ja calculado da dimensao 1
+					else
+						pstart(I) <= "100"; --atualiza usando espiral e L register
+					end if;					
+				end loop;
+				
+				
 				state <= updatep;		
 				
 			when others => 
@@ -381,6 +387,18 @@ if rising_edge(clk) then
 end if;
 end process;	
 
+--Processo para informar se a baleia vai atualizar usando o espiral ou não
+
+seleciona_atualizacao: for I in 1 to NP generate
+process(ready_lfsr_p(I),p_sorteio(I))
+begin
+	if p_sorteio(I) < s_meio then
+		muxAtualizaPos(I) <= '0'; --Atualização sem ser em espiral
+	else -- Espiral
+		muxAtualizaPos(I) <= '1'; --Atualização em espiral
+	end if;
+end process;
+end generate;
 
 process(reset,clk,i_start,s_ready_cmp_baleia)
 begin
