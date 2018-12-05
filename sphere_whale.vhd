@@ -223,9 +223,9 @@ process(reset,clk,fstart)
 			else
 				case state is 
 					when waiting =>
-						fready <= '0';
-						pready <= '0';
+						fready <= '0';						
 						op_as <= '0';
+						
 						if fstart = '1' then
 							acc_v 	:= (others => '0'); --zera o acumulador
 							count		<= (others => '0'); --zera contador que controla mux
@@ -235,6 +235,9 @@ process(reset,clk,fstart)
 							opA_mul2       <= out_mux2;
 							opB_mul2       <= out_mux2;
 							start_mul2     <= '1';
+							
+							pready <= '0';
+							
 							state          <= multiplier;					
 						end if;
 						
@@ -242,6 +245,9 @@ process(reset,clk,fstart)
 							start_lfsr_1 <= '1'; --gera os r's para calculo do A e do C
 							start_lfsr_2 <= '1';
 							opA_mul1 <= s_two;
+							
+							pready <= '0';
+							
 							state <= calculo_AC_1;
 						end if;
 						
@@ -257,6 +263,9 @@ process(reset,clk,fstart)
 								pos_register 	<= pos_rand_whale;								
 							end if;							
 							start_mul1 <= '1';							
+							
+							pready <= '0';
+							
 							state <= calculo_D;
 						end if;
 						
@@ -267,6 +276,8 @@ process(reset,clk,fstart)
 							start_as <= '1'; -- (a2 - 1) parte de l = (a2-1)*rand + 1
 							
 							start_lfsr_1 <= '1'; --rand
+							
+							pready <= '0';
 							
 							state <= calculo_L;
 						end if;
@@ -285,8 +296,13 @@ process(reset,clk,fstart)
 							opB_mul2 <= L_Register;
 							start_mul2 <= '1'; -- 2*pi*l
 							
+							pready <= '0';							
 							state <= atualiza_espiral;
 							
+						end if;
+						
+						if pstart = "101" then --Nop zera o ready
+							pready <= '0';						
 						end if;
 						
 					when calculo_L =>

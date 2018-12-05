@@ -97,6 +97,7 @@ signal s_start_rand	 	: std_logic := '0'; -- inicia o calculo de todos os x_rand
 signal s_out_rand_whale : mux1D;
 signal ready_rand_whale	: std_logic_vector(1 to NP);
 
+signal andPready	: std_logic;
 
 begin
 
@@ -334,8 +335,10 @@ if rising_edge(clk) then
 				end loop;
 				
 				
-				if pready(1) = '1' then
-					
+--				if pready(1) = '1' then
+
+				if andPready = '1' then
+				
 					--Atualizacao das dimensões das baleias para cada dimensão
 					for I in 1 to NP loop
 						s_nx(I,icd)  <= new_pos(I);
@@ -347,7 +350,7 @@ if rising_edge(clk) then
 						s_start_eval <= '1';  
 						
 						for I in 1 to NP loop
-							pstart(I) <= "000";
+							pstart(I) <= "101"; -- nop e zera ready
 						end loop;
 						state <= fitness_x;
 					else
@@ -355,10 +358,13 @@ if rising_edge(clk) then
 						icd := icd + 1;
 						for I in 1 to NP loop
 							pos_atual_whale(I)  <= s_nx(I,icd);
+							pstart(I) <= "101"; -- nop e zera ready
 						end loop;
 					
 						pos_best_whale <= leader_pos(icd);
 						s_start_rand <= '1'; -- Manda gerar a baleia aleatoria para a outra dimensão
+						
+						
 						state <= wait_rand;
 					end if;
 					
@@ -370,7 +376,7 @@ if rising_edge(clk) then
 				s_start_rand <= '0';
 				
 				for I in 1 to NP loop
-					if muxAtualizaPos(I) = '1' then
+					if muxAtualizaPos(I) = '0' then
 						pstart(I) <= "010"; -- atualizacao da posicao usando A e C ja calculado da dimensao 1
 					else
 						pstart(I) <= "100"; --atualiza usando espiral e L register
@@ -388,8 +394,10 @@ if rising_edge(clk) then
 end if;
 end process;	
 
---Processo para informar se a baleia vai atualizar usando o espiral ou não
 
+andPready <= pready(1) and pready(2) and pready(3) and pready(4) and pready(5) and pready(6) and pready(7) and pready(8) and pready(9) and pready(10);
+
+--Processo para informar se a baleia vai atualizar usando o espiral ou não
 seleciona_atualizacao: for I in 1 to NP generate
 process(ready_lfsr_p(I),p_sorteio(I))
 begin
