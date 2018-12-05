@@ -328,6 +328,7 @@ if rising_edge(clk) then
 				end if;
 				
 			when updatep =>
+			
 				for I in 1 to NP loop
 					pstart(I) <= "000";
 				end loop;
